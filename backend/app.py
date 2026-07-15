@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.routes.health_route import router as health_router
-from backend.routes.websocket_route import router as websocket_router
-from backend.routes.ecg_route import router as ecg_router
+from routes.health_route import router as health_router
+from routes.websocket_route import router as websocket_router
+from routes.ecg_route import router as ecg_router
 
 
 app = FastAPI(
@@ -12,7 +12,6 @@ app = FastAPI(
 
 
 # Allow frontend connection
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,32 +22,33 @@ app.add_middleware(
 
 
 # Register routes
-
 app.include_router(health_router)
 app.include_router(websocket_router)
 app.include_router(ecg_router)
 
 
 @app.get("/")
-
 def home():
 
     return {
 
         "message": "ECG Stress Detection Backend Running",
+
         "version": "1.0.0",
+
         "routes": [
             "/",
             "/health",
             "/ecg",
-            "/ws"
-
+            "/ws/frontend",
+            "/ws/esp32"
         ]
 
     }
 
 
 if __name__ == "__main__":
+
     import uvicorn
 
     uvicorn.run(
@@ -56,5 +56,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True
-
     )
