@@ -5,8 +5,21 @@ from services.stress_service import get_stress_level
 
 SAMPLING_RATE = 700
 WINDOW_SEC = 180
+
+# Ideal 3-minute window
 WINDOW_SIZE = SAMPLING_RATE * WINDOW_SEC
+
+# Allow 2% packet loss
+MIN_WINDOW_SIZE = int(WINDOW_SIZE * 0.98)
+
+# Keep last 1.5 minutes after prediction
 STEP_SIZE = WINDOW_SIZE // 2
+
+print("=" * 60)
+print("Target Window Size :", WINDOW_SIZE)
+print("Minimum Window Size:", MIN_WINDOW_SIZE)
+print("Sliding Window Size:", STEP_SIZE)
+print("=" * 60)
 
 
 async def process_ecg(ecg_values, electrode_connected):
@@ -42,13 +55,13 @@ async def process_ecg(ecg_values, electrode_connected):
 
         ecg_buffer.append(ecg)
 
-    print("Buffer Size:", len(ecg_buffer))
+    print("Current Buffer Size:", len(ecg_buffer))
 
     # Wait until enough ECG collected
-    if len(ecg_buffer) < WINDOW_SIZE:
+    if len(ecg_buffer) < MIN_WINDOW_SIZE:
 
         print(
-            f"Recording... {len(ecg_buffer)}/{WINDOW_SIZE}"
+            f"Recording... {len(ecg_buffer)}/{MIN_WINDOW_SIZE}"
         )
 
         return {
@@ -56,13 +69,19 @@ async def process_ecg(ecg_values, electrode_connected):
             "samples": len(ecg_buffer)
         }
 
+    print("=" * 60)
+    print("Minimum required samples reached")
+    print("Available Samples:", len(ecg_buffer))
+
     try:
 
         print("=" * 60)
         print("Starting Feature Extraction")
 
-        # Latest 3-minute ECG window
-        window = ecg_buffer[-WINDOW_SIZE:]
+        # Use available samples (up to the ideal window size)
+        window = ecg_buffer[-min(len(ecg_buffer), WINDOW_SIZE):]
+
+        print("Window Used For Extraction:", len(window))
 
         features = extract_features(
             window,
@@ -100,7 +119,7 @@ async def process_ecg(ecg_values, electrode_connected):
 
         print("Prediction Sent To Frontend")
 
-        # Sliding window (keep last 1.5 minutes)
+        # Sliding window
         del ecg_buffer[:-STEP_SIZE]
 
         print("Buffer Updated")
